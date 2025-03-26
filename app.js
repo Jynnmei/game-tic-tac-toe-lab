@@ -7,9 +7,8 @@
 // Provide logic for a cat’s game (tie), also displaying a message.
 // Provide a Reset Game button that will clear the contents of the board.
 
-/*-------------------------------- Constants --------------------------------*/
 const player = ["X", "O"];
-const winConditions = [
+const winningCombos = [
   [0, 1, 2],
   [3, 4, 5],
   [6, 7, 8],
@@ -20,79 +19,109 @@ const winConditions = [
   [2, 4, 6],
 ];
 
-/*---------------------------- Variables (state) ----------------------------*/
 let board = ["", "", "", "", "", "", "", "", ""];
-let currentPlayer = "X";
+let turn = "X";
+let tie = false;
 let gameOver = false;
-let squareIndex = null;
+let winner = null;
 
-/*------------------------ Cached Element References ------------------------*/
-const messageElement = document.querySelector("#message");
-const squares = document.querySelectorAll(".sqr");
-const resetBtn = document.querySelector(".btn");
+const messageEl = document.querySelector("#message");
+const squareEls = document.querySelectorAll(".sqr");
+const resetBtnEl = document.querySelector(".btn");
 
-/*------------------------- Functions & Event Listners --------------------------------*/
+function init() {
+  console.log("Game initialized!");
+  board = ["", "", "", "", "", "", "", "", ""];
+  turn = "X";
+  tie = false;
+  gameOver = false;
+  winner = null;
+  render();
+}
 
-const checkWinner = () => {
-  for (let i = 0; i < winConditions.length; i++) {
-    const condition = winConditions[i];
+function updateBoard() {
+  squareEls.forEach((square, index) => {
+    const cellValue = board[index];
+    square.textContent = cellValue;
+  });
+}
+
+function updateMessage() {
+  if (!winner && !tie) {
+    messageEl.textContent = `It's ${turn}'s turn`;
+  } else if (tie) {
+    messageEl.textContent = "It's a tie!";
+  } else {
+    messageEl.textContent = `Player ${turn} wins!`;
+  }
+}
+
+function render() {
+  updateBoard();
+  updateMessage();
+}
+
+function checkForWinner() {
+  for (let i = 0; i < winningCombos.length; i++) {
+    const condition = winningCombos[i];
     const a = condition[0];
     const b = condition[1];
     const c = condition[2];
 
     if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-      messageElement.textContent = `It's ${currentPlayer} wins!`;
+      messageEl.textContent = `It's ${turn} wins!`;
+      winner = true;
       gameOver = true;
       return true;
     }
   }
-
   return false;
-};
+}
 
-const handleSquareClick = (e) => {
+function placePiece(squareIndex) {
+  board[squareIndex] = turn;
+}
+
+function checkForTie() {
+  if (!board.includes("") && !winner) {
+    tie = true;
+    gameOver = true;
+    return true;
+  }
+  return false;
+}
+
+function handleClick(e) {
   const squareIndex = e.target.id;
 
   if (board[squareIndex] !== "" || gameOver) {
     return;
   }
 
-  board[squareIndex] = currentPlayer;
-  e.target.textContent = currentPlayer;
+  placePiece(squareIndex);
 
-  if (checkWinner()) {
-    messageElement.textContent = `${currentPlayer} wins!`;
-    gameOver = true;
+  if (checkForWinner()) {
+    render();
     return;
   }
 
-  if (!board.includes("")) {
-    messageElement.textContent = "It's a tie!";
-    gameOver = true;
+  if (checkForTie()) {
+    render();
     return true;
   }
 
-  currentPlayer = currentPlayer === "X" ? "O" : "X";
-  messageElement.textContent = `It's ${currentPlayer} turn`;
-};
-squares.forEach((square) => {
-  square.addEventListener("click", handleSquareClick);
-});
-
-if (resetBtn) {
-  resetBtn.addEventListener("click", () => {
-    console.log("Game Reset!");
-
-    board = ["", "", "", "", "", "", "", "", ""];
-    currentPlayer = "X";
-    gameOver = false;
-
-    squares.forEach((square) => {
-      square.textContent = "";
-    });
-
-    messageElement.textContent = `It ${currentPlayer}'s turn`;
-  });
+  switchPlayerTurn();
+  render();
 }
 
-messageElement.textContent = `${currentPlayer}'s turn`;
+function switchPlayerTurn() {
+  turn = turn === "X" ? "O" : "X";
+}
+
+squareEls.forEach((square) => {
+  square.addEventListener("click", handleClick);
+});
+
+resetBtnEl.addEventListener("click", init);
+
+init();
